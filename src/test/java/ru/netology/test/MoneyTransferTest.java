@@ -1,71 +1,94 @@
 package ru.netology.test;
 
-import lombok.val;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import ru.netology.data.UserInfo;
-import ru.netology.page.DashboardPage;
 import ru.netology.page.LoginPage;
 
 import static com.codeborne.selenide.Selenide.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static ru.netology.data.UserInfo.*;
 
 
 public class MoneyTransferTest {
 
-    private int begBalance1;
-    private int begBalance2;
-    private int endBalance1;
-    private int endBalance2;
-    private int sum;
-    DashboardPage dashboardPage;
 
-    @BeforeEach
-    void SetUp() {
-        open("http://localhost:9999");
-        val loginPage = new LoginPage();
-        val authInfo = UserInfo.getAuthInfo();
-        val verificationPage = loginPage.validLogin(authInfo);
-        val verificationCode = UserInfo.getVerificationCodeFor(authInfo);
-        dashboardPage = verificationPage.validVerify(verificationCode);
-        begBalance1 = dashboardPage.getBalance(dashboardPage.card1);
-        begBalance2 = dashboardPage.getBalance(dashboardPage.card2);
+    @Test
+    void shouldIdTransferFromFirstToSecond() {
+        var loginPage = new LoginPage();
+        var LoginPage = open("http://localhost:9999", LoginPage.class);
+        var authInfo = getAuthInfo();
+        var verificationPage = loginPage.validLogin(authInfo);
+        var verificationCode = getVerificationCode();
+        var dashboardPage = verificationPage.validVerify(verificationCode);
+        var firstCardInfo = getFirstCardInfo();
+        var secondCardInfo = getSecondCardInfo();
+        var firstCardBalance = dashboardPage.getCardBalance(firstCardInfo);
+        var secondCardBalance = dashboardPage.getCardBalance(secondCardInfo);
+        var amount = generateRandomValueInBalanceRange(firstCardBalance);
+        var moneyTransferPage = dashboardPage.selectCard(secondCardInfo);
+        moneyTransferPage.makeTransfer(String.valueOf(amount), firstCardInfo);
+        assertEquals(firstCardBalance - amount, dashboardPage.getCardBalance(firstCardInfo));
+        assertEquals(secondCardBalance + amount, dashboardPage.getCardBalance(secondCardInfo));
+    }
+
+
+    @Test
+    void shouldTransferFromSecondToFirst() {
+        var loginPage = new LoginPage();
+        var LoginPage = open("http://localhost:9999", LoginPage.class);
+        var authInfo = getAuthInfo();
+        var verificationPage = loginPage.validLogin(authInfo);
+        var verificationCode = getVerificationCode();
+        var dashboardPage = verificationPage.validVerify(verificationCode);
+        var firstCardInfo = getFirstCardInfo();
+        var secondCardInfo = getSecondCardInfo();
+        var firstCardBalance = dashboardPage.getCardBalance(firstCardInfo);
+        var secondCardBalance = dashboardPage.getCardBalance(secondCardInfo);
+        var amount = generateRandomValueInBalanceRange(secondCardBalance);
+        var moneyTransferPage = dashboardPage.selectCard(firstCardInfo);
+        moneyTransferPage.makeTransfer(String.valueOf(amount), firstCardInfo);
+        assertEquals(secondCardBalance - amount, dashboardPage.getCardBalance(secondCardInfo));
+        assertEquals(firstCardBalance + amount, dashboardPage.getCardBalance(firstCardInfo));
     }
 
     @Test
-    @DisplayName("Перевод денег сo второй карты на первую")
-    void shouldTransferMoneyFromSecondToFirstCard() throws InterruptedException {
-        sum = 100;
-        val topUpPage = dashboardPage.clickTopUp(dashboardPage.card1);
-        val cardNum = UserInfo.getSecondCard().getNumber();
-        val dashboardPage2 = topUpPage.successfulTransfer(Integer.toString(sum), cardNum);
-        endBalance1 = dashboardPage2.getBalance(dashboardPage2.card1);
-        endBalance2 = dashboardPage2.getBalance(dashboardPage2.card2);
-        assertEquals(begBalance1 + sum, endBalance1);
-        assertEquals(begBalance2 - sum, endBalance2);
+    void shouldShowErrorIfAmountOfChargeOverBalanceFirstToSecond() {
+        var loginPage = new LoginPage();
+        var LoginPage = open("http://localhost:9999", LoginPage.class);
+        var authInfo = getAuthInfo();
+        var verificationPage = loginPage.validLogin(authInfo);
+        var verificationCode = getVerificationCode();
+        var dashboardPage = verificationPage.validVerify(verificationCode);
+        var firstCardInfo = getFirstCardInfo();
+        var secondCardInfo = getSecondCardInfo();
+        var firstCardBalance = dashboardPage.getCardBalance(firstCardInfo);
+        var secondCardBalance = dashboardPage.getCardBalance(secondCardInfo);
+        var amount = generateRandomValueOverBalanceRange(firstCardBalance);
+        var moneyTransferPage = dashboardPage.selectCard(secondCardInfo);
+        moneyTransferPage.makeTransfer(String.valueOf(amount), firstCardInfo);
+        moneyTransferPage.findErrorMessage(
+                "На картe " + firstCardInfo.getNumber().substring(12, 16) + " недостаточно средств");
+        assertEquals(firstCardBalance - amount, dashboardPage.getCardBalance(firstCardInfo));
+        assertEquals(secondCardBalance + amount, dashboardPage.getCardBalance(secondCardInfo));
     }
 
     @Test
-    @DisplayName("Перевод денег с первой карты на вторую")
-    void shouldTransferMoneyFromFirstToSecondCard() throws InterruptedException {
-        sum = 100;
-        val topUpPage = dashboardPage.clickTopUp(dashboardPage.card2);
-        val cardNum = UserInfo.getFirstCard().getNumber();
-        val dashboardPage2 = topUpPage.successfulTransfer(Integer.toString(sum), cardNum);
-        endBalance1 = dashboardPage2.getBalance(dashboardPage2.card1);
-        endBalance2 = dashboardPage2.getBalance(dashboardPage2.card2);
-        assertEquals(begBalance1 - sum, endBalance1);
-        assertEquals(begBalance2 + sum, endBalance2);
+    void shouldShowErrorIfAmountOfChargeOverBalanceSecondToFirst() {
+        var loginPage = new LoginPage();
+        var LoginPage = open("http://localhost:9999", LoginPage.class);
+        var authInfo = getAuthInfo();
+        var verificationPage = loginPage.validLogin(authInfo);
+        var verificationCode = getVerificationCode();
+        var dashboardPage = verificationPage.validVerify(verificationCode);
+        var firstCardInfo = getFirstCardInfo();
+        var secondCardInfo = getSecondCardInfo();
+        var firstCardBalance = dashboardPage.getCardBalance(firstCardInfo);
+        var secondCardBalance = dashboardPage.getCardBalance(secondCardInfo);
+        var amount = generateRandomValueOverBalanceRange(secondCardBalance);
+        var moneyTransferPage = dashboardPage.selectCard(firstCardInfo);
+        moneyTransferPage.makeTransfer(String.valueOf(amount), firstCardInfo);
+        moneyTransferPage.findErrorMessage(
+                "На картe " + secondCardInfo.getNumber().substring(12, 16) + " недостаточно средств");
+        assertEquals(secondCardBalance, dashboardPage.getCardBalance(secondCardInfo));
+        assertEquals(firstCardBalance, dashboardPage.getCardBalance(firstCardInfo));
     }
-
-    @Test
-    @DisplayName("Не должен переводить больше, чем есть на карте")
-    void shouldNotTransferMoreThanAvailable() {
-        sum = begBalance1 + 100;
-        val topUpPage = dashboardPage.clickTopUp(dashboardPage.card2);
-        val cardNum = UserInfo.getFirstCard().getNumber();
-        topUpPage.unsuccessfulTransfer(Integer.toString(sum), cardNum);
-    }
-
 }

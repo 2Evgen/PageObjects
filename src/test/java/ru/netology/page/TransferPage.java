@@ -1,31 +1,37 @@
 package ru.netology.page;
 
 import com.codeborne.selenide.SelenideElement;
-import org.openqa.selenium.Keys;
+import ru.netology.data.UserInfo;
 
+import java.time.Duration;
+
+import static com.codeborne.selenide.Condition.exactText;
 import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selenide.$;
-import static java.lang.Thread.sleep;
+import static com.codeborne.selenide.Selenide.$x;
+
 
 public class TransferPage {
-    private final SelenideElement sumField = $("div[data-test-id=amount] input");
-    private final SelenideElement accountField = $("span[data-test-id=from] input");
-    private final SelenideElement topUpButton = $("button[data-test-id=action-transfer]");
-    private final SelenideElement errorNotification = $("[data-test-id = error-notification]");
+    private final SelenideElement amountInput = $x("//div[@data-test-id='amount']//input[@class='input__control']");
+    private final SelenideElement fromInput = $x("//span[@data-test-id='from']//input[@class='input__control']");
+    private final SelenideElement transferButton = $x("//button[@data-test-id='action-transfer']");
+    private final SelenideElement transferHead = $(byText("Пополнение карты"));
+    private final SelenideElement errorMessage = $("[data-test-id='error-message']");
 
-    public DashboardPage successfulTransfer(String sum, String cardNum) throws InterruptedException {
-        sumField.sendKeys(Keys.chord(Keys.CONTROL, "a", Keys.DELETE));
-        sumField.setValue(sum);
-        accountField.sendKeys(Keys.chord(Keys.CONTROL, "a", Keys.DELETE));
-        accountField.setValue(cardNum);
-        sleep(5000);
-        topUpButton.click();
+
+    public DashboardPage makeValidTransfer(String amountToTransfer, UserInfo.CardInfo cardInfo) {
+        makeTransfer(amountToTransfer, cardInfo);
         return new DashboardPage();
     }
 
-    public void unsuccessfulTransfer(String sum, String cardNum) {
-        sumField.sendKeys(Keys.chord(Keys.CONTROL, "a", Keys.DELETE));
-        sumField.setValue(sum);
-        errorNotification.shouldBe(visible);
+    public void makeTransfer(String amountToTransfer, UserInfo.CardInfo cardInfo) {
+        amountInput.setValue(amountToTransfer);
+        fromInput.setValue(cardInfo.getNumber());
+        transferButton.click();
+    }
+
+    public void findErrorMessage(String expectedText) {
+        errorMessage.shouldHave(exactText(expectedText), Duration.ofSeconds(15)).shouldBe(visible);
     }
 }

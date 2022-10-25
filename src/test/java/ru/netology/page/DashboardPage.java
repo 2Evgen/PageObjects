@@ -1,16 +1,17 @@
 package ru.netology.page;
 
+import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
+import ru.netology.data.UserInfo;
 
+import static com.codeborne.selenide.Condition.attribute;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selenide.*;
 
 public class DashboardPage {
 
-    private final ElementsCollection topUpButtons = $$("button[data-test-id=action-deposit]");
-    public SelenideElement card1 = $("div[data-test-id='92df3f1c-a033-48e6-8390-206f6b1f56c0']");
-    public SelenideElement card2 = $("div[data-test-id='0f3f5c2a-249e-4c3d-8287-09f7a039391d']");
+    private final ElementsCollection cards = $$(".list__item div");
 
 
     public DashboardPage() {
@@ -18,15 +19,22 @@ public class DashboardPage {
         heading.shouldBe(visible);
     }
 
-    public TransferPage clickTopUp(SelenideElement card) {
-
-        card.find("button[data-test-id=action-deposit]").click();
+    public TransferPage selectCard(UserInfo.CardInfo cardInfo) {
+        cards.findBy(attribute("data-test-id", cardInfo.getTestId())).$("button").click();
         return new TransferPage();
     }
 
-    public int getBalance(SelenideElement card) {
-        String[] text = card.innerText().split(" ");
-        return Integer.parseInt(text[5]);
+    public int getCardBalance(UserInfo.CardInfo cardInfo) {
+        var text = cards.findBy(Condition.text(cardInfo.getNumber().substring(12, 16))).getText();
+        return extractBalance(text);
     }
 
+    private int extractBalance(String text) {
+        String balanceStart = "баланс: ";
+        var start = text.indexOf(balanceStart);
+        String balanceFinish = " р.";
+        var finish = text.indexOf(balanceFinish);
+        var value = text.substring(start + balanceStart.length(), finish);
+        return Integer.parseInt(value);
+    }
 }
