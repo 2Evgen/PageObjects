@@ -25,11 +25,11 @@ public class UserInfo {
         return new CardInfo("5559000000000002", "0f3f5c2a-249e-4c3d-8287-09f7a039391d");
     }
 
-    public static double generateRandomValueInBalanceRange(int balance) {
+    public static int generateRandomValueInBalanceRange(int balance) {
         return new Random().nextInt(balance) + 1;
     }
 
-    public static double generateRandomValueOverBalanceRange(int balance) {
+    public static int generateRandomValueOverBalanceRange(int balance) {
         return Math.abs(balance) + new Random().nextInt(10_000);
     }
 
